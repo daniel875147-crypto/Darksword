@@ -13,7 +13,9 @@
 - **定价：588 USDT**
 - **⚠️仅包含JS代码，不提供后端代码，需自行编写后台代码**
 
-受影响设备
+### 受影响设备
+|IOS版本 |芯片 |iPhone系列|
+|------|---------|------|
 iOS 18.4 - 18.7.2 | A17 Pro / A18 / A18 Pro | iPhone 15 Pro/Pro Max, iPhone 16 全系
 iOS 18.4 - 18.7.2 | A17 Pro / A18 | iPhone 15 Pro 系列, iPhone 16 系列
 iOS 13.0 - 17.2.1 | A12 - A16 | iPhone XS - iPhone 15 系列
